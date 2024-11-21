@@ -75,7 +75,6 @@ def train(
     writer=None,
     scale_invariant=False,
 ):
-    iter = 0
     for ep in range(n_epochs):
         if world_size > 1:
             train_loader.sampler.set_epoch(ep)
@@ -97,7 +96,6 @@ def train(
             else:
                 feats = model(images)
 
-            feats = interpolate(feats, (120,120), mode="bilinear")
             pred = probe(feats)
             pred = interpolate(pred, size=target.shape[-2:], mode="bilinear")
 
@@ -105,9 +103,9 @@ def train(
                 pred = match_scale_and_shift(pred, target)
                 pred = pred.clamp(min=0.001, max=10.0)
 
-            if iter % 100 ==0:
-                writer.add_image('LOSS/pred', pred[0] / 10, iter)
-                writer.add_image('LOSS/gt', target[0] / 10, iter)
+            if i % 100 == 0:
+                writer.add_image('LOSS/pred', pred[0] / 10, ep * len(train_loader) + i)
+                writer.add_image('LOSS/gt', target[0] / 10, ep * len(train_loader) + i)
 
             loss = loss_fn(pred, target)
             loss.backward()
@@ -118,7 +116,6 @@ def train(
             loss = loss.item()
             train_loss += loss
 
-            iter += 1
             if rank == 0:
                 _loss = train_loss / (i + 1)
                 pbar.set_description(
@@ -164,6 +161,7 @@ def validate(
             writer.add_image('EVAL/pred', pred[0] / 10 , iteration)
             writer.add_image('EVAL/gt', target[0] / 10, iteration)
             iteration += 1
+            
             loss = loss_fn(pred, target)
             total_loss += loss.item()
 

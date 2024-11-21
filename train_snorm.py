@@ -96,7 +96,6 @@ def train(
             else:
                 feats = model(images)
 
-            feats = interpolate(feats, (120,120), mode="bilinear")
             pred = probe(feats)
             pred = F.interpolate(pred, size=target.shape[-2:], mode="bicubic")
 
